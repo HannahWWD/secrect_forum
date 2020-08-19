@@ -5,7 +5,9 @@ const mongoose = require('mongoose');
 // const _ = require('lodash');
 const ejs = require('ejs');
 const encrypt = require('mongoose-encryption');
-const md5 = require("md5")
+//const md5 = require("md5")
+const bcrypt = require('bcrypt');
+const saltRounds=10;
 
 const app = express ();
 
@@ -31,8 +33,6 @@ const userSchema = new mongoose.Schema({
 // encrypt when save and decrypt when find
 // userSchema.plugin(encrypt,{ secret:secret, encryptedFields: ['password']})
 
-
-console.log(md5('level3password'))
 const User = new mongoose.model("user",userSchema);
 
 
@@ -50,43 +50,54 @@ app.get('/register',function(req,res){
     res.render("register");
 })
 
-app.post('/login',function(req,res){
-    const username = req.body.username;
-    // if with the same input, hash function will always return the same value, 
-    const password = md5(req.body.password);
-
-    User.findOne({email:username},function(err,foundUser){
-        if(err){
-            console.log(err)
-        }else{
-            if(foundUser){
-                if(foundUser.password === password){
-                    res.render('secrets')
-                }
-            }
-        }
-    })
-})
 
 // note : to test register, email should be level3@3.com 
 // password should be level3password
 // other levels follow the format above
 
 app.post('/register',function(req,res){
-    const newUser = new User ({
-        email:req.body.username,
-        password:md5(req.body.password)
+
+    bcrypt.hash(req.body.password,saltRounds,function(err,hash){
+
+        const newUser = new User ({
+            email:req.body.username,
+            password:hash
+        })
+        // the callback function could be replaced by await 
+        newUser.save(function(err){
+            if(err){
+                console.log(err);
+            }else{
+                res.render('secrets')
+            }
+        })
+
     })
-    // the callback function could be replaced by await 
-    newUser.save(function(err){
-        if(err){
-            console.log(err);
-        }else{
-            res.render('secrets')
+    
+})
+
+app.post('/login', function (req, res) {
+    const username = req.body.username;
+    // if with the same input, hash function will always return the same value, 
+    const password = req.body.password;
+
+    User.findOne({ email: username }, function (err, foundUser) {
+        if (err) {
+            console.log(err)
+        } else {
+            if (foundUser) {
+                bcrypt.compare(password, foundUser.password, function (err, result) {
+                    if (result === true) {
+                        res.render('secrets')
+                    }
+                })
+
+
+
+            }
         }
     })
 })
-
 
 
 
