@@ -26,11 +26,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // encryption key
-const secret = process.env.SECRET
+// const secret = process.env.SECRET
 // encrypt only password
 // encrypt when save and decrypt when find
 // userSchema.plugin(encrypt,{ secret:secret, encryptedFields: ['password']})
 
+
+console.log(md5('level3password'))
 const User = new mongoose.model("user",userSchema);
 
 
@@ -50,6 +52,7 @@ app.get('/register',function(req,res){
 
 app.post('/login',function(req,res){
     const username = req.body.username;
+    // if with the same input, hash function will always return the same value, 
     const password = md5(req.body.password);
 
     User.findOne({email:username},function(err,foundUser){
@@ -65,10 +68,14 @@ app.post('/login',function(req,res){
     })
 })
 
+// note : to test register, email should be level3@3.com 
+// password should be level3password
+// other levels follow the format above
+
 app.post('/register',function(req,res){
     const newUser = new User ({
         email:req.body.username,
-        password:req.body.password
+        password:md5(req.body.password)
     })
     // the callback function could be replaced by await 
     newUser.save(function(err){
